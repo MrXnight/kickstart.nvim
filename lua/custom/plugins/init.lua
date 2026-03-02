@@ -25,26 +25,217 @@ return {
   },
   { 'mrjones2014/smart-splits.nvim', lazy = false },
   {
-    'rmagatti/auto-session',
-    lazy = false,
+    'folke/persistence.nvim',
+    event = 'BufReadPre',
+    config = function()
+      require('persistence').setup {
+        dir = vim.fn.stdpath 'state' .. '/sessions/',
+        need = 1,
+        branch = true,
+      }
 
-    ---enables autocomplete for opts
-    ---@module "auto-session"
-    ---@type AutoSession.Config
-    opts = {
-      suppressed_dirs = { '~/', '~/Projects', '~/Downloads', '/' },
-      -- log_level = 'debug',
+      vim.api.nvim_create_autocmd('VimLeavePre', {
+        group = vim.api.nvim_create_augroup('PersistenceAutoSave', { clear = true }),
+        callback = function()
+          local dominated_by_special_buf = false
+          for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+            if vim.api.nvim_buf_is_loaded(buf) then
+              local ft = vim.bo[buf].filetype
+              local bt = vim.bo[buf].buftype
+              if ft == 'dashboard' or ft == 'gitcommit' or ft == 'gitrebase' or ft == 'lazy' or ft == 'mason' or bt == 'nofile' then
+                dominated_by_special_buf = true
+              else
+                dominated_by_special_buf = false
+                break
+              end
+            end
+          end
+
+          if not dominated_by_special_buf then require('persistence').save() end
+        end,
+      })
+    end,
+    keys = {
+      { '<leader>Sr', function() require('persistence').load() end, desc = 'Restore session' },
+      { '<leader>Sl', function() require('persistence').load { last = true } end, desc = 'Restore last session' },
+      { '<leader>Ss', function() require('persistence').select() end, desc = 'Select session' },
+      { '<leader>SS', function() require('persistence').save() end, desc = 'Save session' },
+      { '<leader>Sd', function() require('persistence').stop() end, desc = 'Disable auto-save' },
+      {
+        '<leader>SD',
+        function()
+          local session_dir = vim.fn.stdpath 'state' .. '/sessions/'
+          local cwd = vim.fn.getcwd():gsub('/', '%%'):gsub(':', '%%')
+          local branch = ''
+
+          local handle = io.popen 'git branch --show-current 2>/dev/null'
+          if handle then
+            branch = handle:read('*a'):gsub('%s+', '')
+            handle:close()
+          end
+
+          local session_file = session_dir .. cwd
+          if branch ~= '' then session_file = session_file .. '@@' .. branch end
+          session_file = session_file .. '.vim'
+
+          if vim.fn.filereadable(session_file) == 1 then
+            vim.fn.delete(session_file)
+            vim.notify('Session deleted', vim.log.levels.INFO)
+          else
+            vim.notify('No session file found', vim.log.levels.WARN)
+          end
+        end,
+        desc = 'Delete session',
+      },
     },
   },
   {
     'nvimdev/dashboard-nvim',
     event = 'VimEnter',
+    dependencies = { 'nvim-tree/nvim-web-devicons' },
     config = function()
+      local logo = [[
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣤⡾⠛⠛⠛⠳⢦⣤⣀⣀⡀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣴⣿⣷⢿⠀⠀⠀⠿⠇⠀⠈⠹⣿
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⡼⠋⠙⠛⠛⠀⠀⠀⠀⠀⣶⣶⡶⠏
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⡿⠁⠀⠀⠀⠀⠀⠀⢀⣴⠟⠋⠉⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣰⡟⠀⠀⠀⠀⠀⠀⠀⠀⣾⠁⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣰⠏⠀⠀⠀⠀⠀⠀⠀⠀⢸⡇⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣰⡏⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⡟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⡟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⡾⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣼⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣾⠃⢠⡿⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⡾⠃⢀⡟⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣿⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣠⡟⠁⠀⢸⠃⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢠⣧⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣴⠋⠀⠀⠀⢸⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⣾⣿⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣠⡶⠋⠁⠀⠀⠀⠀⣸⡄⠀⠀⠀⠀⠈⡇⠀⠀⠀⠀⣼⢻⡇⠀⠀⠀⠀⠀⠀⠀
+⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣤⠾⠛⠁⠀⠀⠀⠀⠀⠀⣰⡏⠉⠀⠀⠀⠀⢠⡇⠀⠀⢀⣼⠏⢸⠃⠀⠀⠀⠀⠀⠀⠀
+      ]]
+
+      logo = string.rep('\n', 2) .. logo .. '\n\n'
+
+      local function get_footer()
+        local version = vim.version()
+        local nvim_version = 'v' .. version.major .. '.' .. version.minor .. '.' .. version.patch
+        local datetime = os.date ' %Y-%m-%d   %H:%M'
+
+        -- Safely get lazy stats
+        local lazy_ok, lazy = pcall(require, 'lazy')
+        if lazy_ok and lazy.stats then
+          local stats = lazy.stats()
+          local ms = (math.floor(stats.startuptime * 100 + 0.5) / 100)
+          return {
+            '',
+            '',
+            '⚡ Neovim ' .. nvim_version .. '   |   ' .. stats.loaded .. '/' .. stats.count .. ' plugins   |   ' .. ms .. 'ms',
+            datetime,
+          }
+        else
+          return {
+            '',
+            '',
+            '⚡ Neovim ' .. nvim_version,
+            datetime,
+          }
+        end
+      end
+
       require('dashboard').setup {
-        -- config
+        theme = 'doom',
+        hide = {
+          statusline = true,
+          tabline = true,
+          winbar = true,
+        },
+        config = {
+          header = vim.split(logo, '\n'),
+          center = {
+            {
+              action = 'Telescope find_files',
+              desc = ' Find File',
+              icon = '󰈞 ',
+              key = 'f',
+              icon_hl = 'DashboardFind',
+              key_hl = 'DashboardKey',
+            },
+            {
+              action = 'ene | startinsert',
+              desc = ' New File',
+              icon = '󰈔 ',
+              key = 'n',
+              icon_hl = 'DashboardNew',
+              key_hl = 'DashboardKey',
+            },
+            {
+              action = 'Telescope oldfiles',
+              desc = ' Recent Files',
+              icon = '󰷊 ',
+              key = 'r',
+              icon_hl = 'DashboardRecent',
+              key_hl = 'DashboardKey',
+            },
+            {
+              action = 'Telescope projects',
+              desc = ' Projects',
+              icon = '󰏓 ',
+              key = 'p',
+              icon_hl = 'DashboardProjects',
+              key_hl = 'DashboardKey',
+            },
+            {
+              action = function() require('persistence').load { last = true } end,
+              desc = ' Restore Session',
+              icon = '󰦛 ',
+              key = 's',
+              icon_hl = 'DashboardSession',
+              key_hl = 'DashboardKey',
+            },
+            {
+              action = 'e $MYVIMRC',
+              desc = ' Config',
+              icon = '󰈞 ',
+              key = 'c',
+              icon_hl = 'DashboardConfig',
+              key_hl = 'DashboardKey',
+            },
+            {
+              action = 'qa',
+              desc = ' Quit',
+              icon = '󰈆 ',
+              key = 'q',
+              icon_hl = 'DashboardQuit',
+              key_hl = 'DashboardKey',
+            },
+          },
+          footer = function() return get_footer() end,
+        },
       }
+
+      -- Custom highlight groups (catppuccin colors)
+      vim.api.nvim_create_autocmd('ColorScheme', {
+        pattern = '*',
+        callback = function()
+          vim.api.nvim_set_hl(0, 'DashboardHeader', { fg = '#89b4fa' }) -- Blue
+          vim.api.nvim_set_hl(0, 'DashboardCenter', { fg = '#cdd6f4' }) -- Text
+          vim.api.nvim_set_hl(0, 'DashboardFooter', { fg = '#6c7086' }) -- Overlay
+          vim.api.nvim_set_hl(0, 'DashboardKey', { fg = '#fab387', bold = true }) -- Peach
+          vim.api.nvim_set_hl(0, 'DashboardFind', { fg = '#89b4fa' }) -- Blue
+          vim.api.nvim_set_hl(0, 'DashboardNew', { fg = '#a6e3a1' }) -- Green
+          vim.api.nvim_set_hl(0, 'DashboardRecent', { fg = '#f9e2af' }) -- Yellow
+          vim.api.nvim_set_hl(0, 'DashboardGrep', { fg = '#cba6f7' }) -- Mauve
+          vim.api.nvim_set_hl(0, 'DashboardProjects', { fg = '#94e2d5' }) -- Teal
+          vim.api.nvim_set_hl(0, 'DashboardSession', { fg = '#f5c2e7' }) -- Pink
+          vim.api.nvim_set_hl(0, 'DashboardLazy', { fg = '#74c7ec' }) -- Sapphire
+          vim.api.nvim_set_hl(0, 'DashboardConfig', { fg = '#fab387' }) -- Peach
+          vim.api.nvim_set_hl(0, 'DashboardQuit', { fg = '#f38ba8' }) -- Red
+        end,
+      })
+
+      -- Trigger highlights on startup
+      vim.cmd 'doautocmd ColorScheme'
     end,
-    dependencies = { { 'nvim-tree/nvim-web-devicons' } },
   },
   {
     'https://codeberg.org/ggandent/leap.nvim',
