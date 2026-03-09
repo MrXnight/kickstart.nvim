@@ -8,22 +8,48 @@
 return {
   {
     'stevearc/oil.nvim',
-    ---@module 'oil'
-    ---@type oil.SetupOpts
-    opts = {
-      default_file_explorer = true,
-      lsp_file_methods = { enabled = true },
-      keymaps = {
-        ['g?'] = 'actions.show_help',
-      },
-    },
+    lazy = false,
+    config = function()
+      require('oil').setup {
+        default_file_explorer = true,
+        lsp_file_methods = { enabled = true },
+        view_options = { show_hidden = true },
+        keymaps = {
+          ['g?'] = 'actions.show_help',
+        },
+      }
+      vim.keymap.set('n', '-', '<cmd>Oil<cr>', { desc = 'Open file explorer' })
+    end,
     -- Optional dependencies
     -- dependencies = { { 'nvim-mini/mini.icons', opts = {} } },
     dependencies = { 'nvim-tree/nvim-web-devicons' }, -- use if you prefer nvim-web-devicons
     -- Lazy loading is not recommended because it is very tricky to make it work correctly in all situations.
-    lazy = false,
   },
-  { 'mrjones2014/smart-splits.nvim', lazy = false },
+  {
+    'mrjones2014/smart-splits.nvim',
+    lazy = false,
+    config = function()
+      -- recommended mappings
+      -- resizing splits
+      -- these keymaps will also accept a range,
+      -- for example `10<A-h>` will `resize_left` by `(10 * config.default_amount)`
+      vim.keymap.set('n', '<A-h>', require('smart-splits').resize_left)
+      vim.keymap.set('n', '<A-j>', require('smart-splits').resize_down)
+      vim.keymap.set('n', '<A-k>', require('smart-splits').resize_up)
+      vim.keymap.set('n', '<A-l>', require('smart-splits').resize_right)
+      -- moving between splits
+      vim.keymap.set('n', '<C-h>', require('smart-splits').move_cursor_left)
+      vim.keymap.set('n', '<C-j>', require('smart-splits').move_cursor_down)
+      vim.keymap.set('n', '<C-k>', require('smart-splits').move_cursor_up)
+      vim.keymap.set('n', '<C-l>', require('smart-splits').move_cursor_right)
+      vim.keymap.set('n', '<C-\\>', require('smart-splits').move_cursor_previous)
+      -- swapping buffers between windows
+      vim.keymap.set('n', '<leader><leader>h', require('smart-splits').swap_buf_left)
+      vim.keymap.set('n', '<leader><leader>j', require('smart-splits').swap_buf_down)
+      vim.keymap.set('n', '<leader><leader>k', require('smart-splits').swap_buf_up)
+      vim.keymap.set('n', '<leader><leader>l', require('smart-splits').swap_buf_right)
+    end,
+  },
   {
     'folke/persistence.nvim',
     event = 'BufReadPre',
@@ -34,9 +60,22 @@ return {
         branch = true,
       }
 
+      -- Close all terminals before saving session
+      local function close_terminals()
+        for _, buf in ipairs(vim.api.nvim_list_bufs()) do
+          if vim.api.nvim_buf_is_valid(buf) then
+            local buftype = vim.bo[buf].buftype
+            if buftype == 'terminal' then vim.api.nvim_buf_delete(buf, { force = true }) end
+          end
+        end
+      end
+
       vim.api.nvim_create_autocmd('VimLeavePre', {
         group = vim.api.nvim_create_augroup('PersistenceAutoSave', { clear = true }),
         callback = function()
+          --close terminals
+          close_terminals()
+
           local dominated_by_special_buf = false
           for _, buf in ipairs(vim.api.nvim_list_bufs()) do
             if vim.api.nvim_buf_is_loaded(buf) then
@@ -177,11 +216,11 @@ return {
               key_hl = 'DashboardKey',
             },
             {
-              action = 'Telescope projects',
-              desc = ' Projects',
-              icon = '󰏓 ',
-              key = 'p',
-              icon_hl = 'DashboardProjects',
+              action = 'Telescope live_grep',
+              desc = ' Find Word',
+              icon = '󰺮 ',
+              key = 'g',
+              icon_hl = 'DashboardGrep',
               key_hl = 'DashboardKey',
             },
             {
@@ -190,6 +229,17 @@ return {
               icon = '󰦛 ',
               key = 's',
               icon_hl = 'DashboardSession',
+              key_hl = 'DashboardKey',
+            },
+            {
+              action = function()
+                vim.cmd 'bd'
+                require('oil').open()
+              end,
+              desc = ' File Explorer',
+              icon = '󰉓 ',
+              key = 'e',
+              icon_hl = 'DashboardExplorer',
               key_hl = 'DashboardKey',
             },
             {
@@ -209,7 +259,7 @@ return {
               key_hl = 'DashboardKey',
             },
           },
-          footer = function() return get_footer() end,
+          footer = get_footer,
         },
       }
 
@@ -245,8 +295,8 @@ return {
       'tpope/vim-repeat',
     },
     config = function()
-      -- This line is required to enable the default mappings (s, S, gs)
-      require('leap').add_default_mappings()
+      vim.keymap.set({ 'n', 'x', 'o' }, 's', '<Plug>(leap)')
+      vim.keymap.set('n', 'S', '<Plug>(leap-from-window)')
     end,
   },
   {
@@ -319,7 +369,7 @@ return {
       local ram_cache = { value = '', percentage = 0, last_update = 0 }
       local function get_cached_ram()
         local now = os.time()
-        if now - ram_cache.last_update >= 5 then -- Update every 5 seconds
+        if now - ram_cache.last_update >= 10 then -- Update every 10 seconds
           ram_cache.value, ram_cache.percentage = get_ram_usage()
           ram_cache.last_update = now
         end
@@ -394,12 +444,13 @@ return {
               hide_filename_extension = false,
               show_modified_status = true,
               mode = 4,
-              max_length = vim.o.columns * 1 / 2,
+              max_length = vim.o.columns * 2 / 3,
               filetype_names = {
-                NvimTree = 'Explorer',
+                Oil = 'Explorer',
                 TelescopePrompt = 'Telescope',
                 lazy = 'Lazy',
                 mason = 'Mason',
+                dashboard = 'Dashboard',
               },
               symbols = {
                 modified = ' ●',

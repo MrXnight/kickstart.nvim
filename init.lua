@@ -212,15 +212,15 @@ vim.keymap.set('t', '<Esc><Esc>', '<C-\\><C-n>', { desc = 'Exit terminal mode' }
 --  Use CTRL+<hjkl> to switch between windows
 --
 --  See `:help wincmd` for a list of all window commands
-vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left window' })
-vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
-vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
-vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
+-- vim.keymap.set('n', '<C-h>', '<C-w><C-h>', { desc = 'Move focus to the left window' })
+-- vim.keymap.set('n', '<C-l>', '<C-w><C-l>', { desc = 'Move focus to the right window' })
+-- vim.keymap.set('n', '<C-j>', '<C-w><C-j>', { desc = 'Move focus to the lower window' })
+-- vim.keymap.set('n', '<C-k>', '<C-w><C-k>', { desc = 'Move focus to the upper window' })
 
 -- Add bindings to save file
-vim.keymap.set('n', '<C-S>', '<cmd>write<CR>', { desc = 'Save file' })
-vim.keymap.set('i', '<C-S>', '<Esc><cmd>write<CR>', { desc = 'Save file' })
-vim.keymap.set('v', '<C-S>', '<Esc><cmd>write<CR>', { desc = 'Save file' })
+-- vim.keymap.set('n', '<C-S>', '<cmd>write<CR>', { desc = 'Save file' })
+-- vim.keymap.set('i', '<C-S>', '<Esc><cmd>write<CR>', { desc = 'Save file' })
+-- vim.keymap.set('v', '<C-S>', '<Esc><cmd>write<CR>', { desc = 'Save file' })
 
 -- NOTE: Some terminals have colliding keymaps or are not able to send distinct keycodes
 -- vim.keymap.set("n", "<C-S-h>", "<C-w>H", { desc = "Move window to the left" })
@@ -985,3 +985,16 @@ require('lazy').setup({
 
 -- The line beneath this is called `modeline`. See `:help modeline`
 -- vim: ts=2 sts=2 sw=2 et
+
+if vim.fn.has 'win32' == 1 then
+  vim.o.shell = 'pwsh.exe'
+  vim.o.shellcmdflag = '-NoLogo'
+  vim.o.shellredir = '2>&1 | Out-FIle -Encoding UTF8 %s; exit $LastExitCode'
+  vim.o.shellpipe = '2>&1 | Out-File -Encoding UTF* %s; exit $LastExitCode'
+  vim.o.shellquote = ''
+  vim.o.shellxquote = ''
+else
+  vim.o.shell = '/usr/bin/fish'
+end
+
+if vim.g.neovide then vim.g.neovide_cursor_trail_size = 0.0 end
