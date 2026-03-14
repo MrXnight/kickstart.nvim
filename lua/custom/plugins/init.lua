@@ -29,6 +29,9 @@ return {
     'mrjones2014/smart-splits.nvim',
     lazy = false,
     config = function()
+      require('smart-splits').setup {
+        set_environment_variables = true,
+      }
       -- recommended mappings
       -- resizing splits
       -- these keymaps will also accept a range,
