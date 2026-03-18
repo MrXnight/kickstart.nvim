@@ -582,4 +582,46 @@ return {
       })
     end,
   },
+  {
+    'folke/snacks.nvim',
+    priority = 1000,
+    lazy = false,
+    opts = {
+      input = {
+        enabled = true,
+        win = {
+          relative = 'cursor',
+          row = 1,
+          col = 0,
+          border = 'rounded',
+        },
+      },
+      picker = {
+        enabled = true,
+        -- This handles vim.ui.select() for code actions
+        ui_select = true,
+      },
+    },
+  },
+  {
+    'esmuellert/codediff.nvim',
+    cmd = 'CodeDiff',
+  },
+  {
+    'NeogitOrg/neogit',
+    lazy = true,
+    dependencies = {
+      'nvim-lua/plenary.nvim', -- required
+
+      -- Only one of these is needed.
+      'esmuellert/codediff.nvim', -- optional
+
+      -- Only one of these is needed.
+      'nvim-telescope/telescope.nvim', -- optional
+    },
+    cmd = 'Neogit',
+    keys = {
+      { '<leader>gg', '<cmd>Neogit<cr>', desc = 'Show Neogit UI' },
+    },
+  },
 }
