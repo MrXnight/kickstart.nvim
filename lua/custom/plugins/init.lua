@@ -325,63 +325,6 @@ return {
       -- Detect OS
       local is_windows = vim.fn.has 'win32' == 1 or vim.fn.has 'win64' == 1
 
-      -- Function to get RAM usage
-      local function get_ram_usage()
-        local ram_used = 0
-        local ram_total = 0
-
-        if is_windows then
-          -- Windows: Use wmic command
-          local handle = io.popen 'wmic OS get FreePhysicalMemory,TotalVisibleMemorySize /Value 2>nul'
-          if handle then
-            local result = handle:read '*a'
-            handle:close()
-
-            local free_mem = result:match 'FreePhysicalMemory=(%d+)'
-            local total_mem = result:match 'TotalVisibleMemorySize=(%d+)'
-
-            if free_mem and total_mem then
-              ram_total = tonumber(total_mem) / 1024 / 1024 -- Convert KB to GB
-              local ram_free = tonumber(free_mem) / 1024 / 1024
-              ram_used = ram_total - ram_free
-            end
-          end
-        else
-          -- Linux: Use /proc/meminfo
-          local meminfo = io.open('/proc/meminfo', 'r')
-          if meminfo then
-            local content = meminfo:read '*a'
-            meminfo:close()
-
-            local mem_total = content:match 'MemTotal:%s+(%d+)'
-            local mem_available = content:match 'MemAvailable:%s+(%d+)'
-
-            if mem_total and mem_available then
-              ram_total = tonumber(mem_total) / 1024 / 1024 -- Convert KB to GB
-              ram_used = ram_total - (tonumber(mem_available) / 1024 / 1024)
-            end
-          end
-        end
-
-        if ram_total > 0 then
-          local percentage = (ram_used / ram_total) * 100
-          return string.format('%.1fG', ram_used), percentage
-        end
-
-        return 'N/A', 0
-      end
-
-      -- Cache RAM usage to avoid frequent system calls
-      local ram_cache = { value = '', percentage = 0, last_update = 0 }
-      local function get_cached_ram()
-        local now = os.time()
-        if now - ram_cache.last_update >= 10 then -- Update every 10 seconds
-          ram_cache.value, ram_cache.percentage = get_ram_usage()
-          ram_cache.last_update = now
-        end
-        return ram_cache.value, ram_cache.percentage
-      end
-
       -- Function to get time icon based on hour
       local function get_time_icon()
         local hour = tonumber(os.date '%H')
@@ -489,30 +432,7 @@ return {
               color = { fg = colors.surface },
               padding = { left = 1, right = 1 },
             },
-            -- RAM Usage
-            {
-              function()
-                local ram, percentage = get_cached_ram()
-                local icon = '󰍛'
-                if percentage > 80 then
-                  icon = '󰀪'
-                elseif percentage > 60 then
-                  icon = '󰍛'
-                end
-                return icon .. ' ' .. ram
-              end,
-              color = function()
-                local _, percentage = get_cached_ram()
-                if percentage > 80 then
-                  return { fg = colors.red }
-                elseif percentage > 60 then
-                  return { fg = colors.yellow }
-                else
-                  return { fg = colors.subtext }
-                end
-              end,
-              padding = { left = 0, right = 1 },
-            },
+            {},
           },
           lualine_y = {
             -- Active LSP client
