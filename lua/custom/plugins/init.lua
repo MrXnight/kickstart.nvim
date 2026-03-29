@@ -544,4 +544,18 @@ return {
       { '<leader>gg', '<cmd>Neogit<cr>', desc = 'Show Neogit UI' },
     },
   },
+  {
+    'mrcjkb/rustaceanvim',
+    version = '^8', -- Recommended
+    lazy = false, -- This plugin is already lazy
+    config = function()
+      vim.g.rustaceanvim = {
+        server = {
+          ['rust-analyzer'] = {
+            check = { command = 'clippy' },
+          },
+        },
+      }
+    end,
+  },
 }

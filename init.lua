@@ -637,7 +637,6 @@ require('lazy').setup({
             '--clang-tidy',
           },
         },
-        rust_analyzer = {},
         ruff = {},
         ty = {},
         cmakelang = {
