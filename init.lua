@@ -284,6 +284,7 @@ rtp:prepend(lazypath)
 -- NOTE: Here is where you install your plugins.
 require('lazy').setup({
   -- NOTE: Plugins can be added via a link or github org/name. To run setup automatically, use `opts = {}`
+  checker = { enabled = false },
   { 'NMAC427/guess-indent.nvim', opts = {} },
 
   -- Alternatively, use `config = function() ... end` for full control over the configuration.
@@ -639,9 +640,7 @@ require('lazy').setup({
         },
         ruff = {},
         ty = {},
-        cmakelang = {
-          filetypes = { 'cmake', 'CMakeLists.txt' },
-        },
+        neocmakelsp = {},
         -- gopls = {},
         -- pyright = {},
         --
@@ -692,7 +691,7 @@ require('lazy').setup({
       -- You can press `g?` for help in this menu.
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
-        -- You can add other tools here that you want Mason to install
+        'clangd',
       })
 
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
