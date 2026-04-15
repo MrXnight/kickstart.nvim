@@ -1,3 +1,5 @@
+-- Add indentation guides even on blank lines
+
 ---@module 'lazy'
 ---@type LazySpec
 return {
