@@ -306,177 +306,149 @@ return {
     end,
   },
   {
-    'nvim-lualine/lualine.nvim',
+    'echasnovski/mini.statusline',
+    version = '*',
     dependencies = { 'nvim-tree/nvim-web-devicons' },
     config = function()
-      -- Colors for custom components (catppuccin mocha palette)
-      local colors = {
-        blue = '#89b4fa',
-        green = '#a6e3a1',
-        yellow = '#f9e2af',
-        red = '#f38ba8',
-        mauve = '#cba6f7',
-        peach = '#fab387',
-        teal = '#94e2d5',
-        subtext = '#a6adc8',
-        surface = '#313244',
+      local statusline = require 'mini.statusline'
+
+      statusline.setup {
+        use_icons = true,
+        set_vim_settings = true,
+        content = {
+          active = function()
+            local mode, mode_hl = statusline.section_mode { trunc_width = 120 }
+            local git = statusline.section_git { trunc_width = 75 }
+            local diag = statusline.section_diagnostics { trunc_width = 75 }
+            local filename = statusline.section_filename { trunc_width = 140 }
+            local fileinfo = statusline.section_fileinfo { trunc_width = 120 }
+            local location = statusline.section_location { trunc_width = 75 }
+            local search = statusline.section_searchcount { trunc_width = 75 }
+
+            return statusline.combine_groups {
+              { hl = mode_hl, strings = { mode } },
+              { hl = 'MiniStatuslineDevinfo', strings = { git, diag } },
+              '%<',
+              { hl = 'MiniStatuslineFilename', strings = { filename } },
+              '%=',
+              { hl = 'MiniStatuslineFileinfo', strings = { fileinfo } },
+              { hl = 'MiniStatuslineLocation', strings = { search, location } },
+            }
+          end,
+          inactive = function()
+            local filename = statusline.section_filename { trunc_width = 140 }
+            return statusline.combine_groups {
+              { hl = 'MiniStatuslineInactive', strings = { filename } },
+            }
+          end,
+        },
       }
-
-      -- Detect OS
-      local is_windows = vim.fn.has 'win32' == 1 or vim.fn.has 'win64' == 1
-
-      -- Function to get time icon based on hour
+    end,
+  },
+  {
+    'echasnovski/mini.tabline',
+    version = '*',
+    dependencies = { 'nvim-tree/nvim-web-devicons' },
+    config = function()
       local function get_time_icon()
         local hour = tonumber(os.date '%H')
-        if hour >= 6 and hour < 18 then
-          return '󰖨' -- Day sun
-        else
-          return '󰖔' -- Night moon
-        end
+        return hour >= 6 and hour < 18 and '󰖨' or '󰖔'
       end
 
-      -- Function to get time icon color
-      local function get_time_color()
-        local hour = tonumber(os.date '%H')
-        if hour >= 6 and hour < 18 then
-          return { fg = colors.yellow }
-        else
-          return { fg = colors.blue }
+      local function lsp_clients()
+        local clients = vim.lsp.get_clients { bufnr = 0 }
+        if #clients == 0 then return '' end
+        local names = {}
+        for _, c in ipairs(clients) do
+          table.insert(names, c.name)
         end
+        return ' ' .. table.concat(names, ', ')
       end
 
-      -- Helper function for buffer switching
-      _G.lualine_buffer_switch = function(index)
-        local buffers = {}
+      local function workspace_diagnostics()
+        local counts = { error = 0, warn = 0, hint = 0, info = 0 }
         for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-          if vim.api.nvim_buf_is_loaded(buf) and vim.bo[buf].buflisted then table.insert(buffers, buf) end
+          if vim.api.nvim_buf_is_loaded(buf) then
+            counts.error = counts.error + #vim.diagnostic.get(buf, { severity = vim.diagnostic.severity.ERROR })
+            counts.warn = counts.warn + #vim.diagnostic.get(buf, { severity = vim.diagnostic.severity.WARN })
+            counts.hint = counts.hint + #vim.diagnostic.get(buf, { severity = vim.diagnostic.severity.HINT })
+            counts.info = counts.info + #vim.diagnostic.get(buf, { severity = vim.diagnostic.severity.INFO })
+          end
         end
-        if buffers[index] then vim.api.nvim_set_current_buf(buffers[index]) end
+        local parts = {}
+        if counts.error > 0 then table.insert(parts, '%#MiniTablineDiagError# ' .. counts.error) end
+        if counts.warn > 0 then table.insert(parts, '%#MiniTablineDiagWarn# ' .. counts.warn) end
+        if counts.hint > 0 then table.insert(parts, '%#MiniTablineDiagHint#󰌵 ' .. counts.hint) end
+        if counts.info > 0 then table.insert(parts, '%#MiniTablineDiagInfo# ' .. counts.info) end
+        return table.concat(parts, ' ')
       end
 
-      require('lualine').setup {
-        options = {
-          theme = 'auto',
-          component_separators = { left = '', right = '' },
-          section_separators = { left = '', right = '' },
-          globalstatus = true,
-          disabled_filetypes = {
-            tabline = { 'NvimTree', 'neo-tree', 'dashboard' },
-          },
-        },
-
-        -- Statusline (bottom)
-        sections = {
-          lualine_a = { 'mode' },
-          lualine_b = { 'branch', 'diff', 'diagnostics' },
-          lualine_c = { { 'filename', path = 1 } },
-          lualine_x = { 'encoding', 'fileformat', 'filetype' },
-          lualine_y = { 'progress' },
-          lualine_z = { 'location' },
-        },
-
-        inactive_sections = {
-          lualine_a = {},
-          lualine_b = {},
-          lualine_c = { 'filename' },
-          lualine_x = { 'location' },
-          lualine_y = {},
-          lualine_z = {},
-        },
-
-        -- Tabline (top) - buffers + diagnostics + RAM + time
-        tabline = {
-          lualine_a = {
-            {
-              'buffers',
-              show_filename_only = true,
-              hide_filename_extension = false,
-              show_modified_status = true,
-              mode = 4,
-              max_length = vim.o.columns * 2 / 3,
-              filetype_names = {
-                Oil = 'Explorer',
-                TelescopePrompt = 'Telescope',
-                lazy = 'Lazy',
-                mason = 'Mason',
-                dashboard = 'Dashboard',
-              },
-              symbols = {
-                modified = ' ●',
-                alternate_file = '',
-                directory = '',
-              },
-            },
-          },
-          lualine_b = {},
-          lualine_c = {},
-          lualine_x = {
-            -- LSP diagnostics summary
-            {
-              'diagnostics',
-              sources = { 'nvim_workspace_diagnostic' },
-              sections = { 'error', 'warn', 'hint', 'info' },
-              symbols = {
-                error = ' ',
-                warn = ' ',
-                hint = '󰌵 ',
-                info = ' ',
-              },
-              colored = true,
-              update_in_insert = false,
-              always_visible = false,
-            },
-            -- Separator
-            {
-              function() return '│' end,
-              color = { fg = colors.surface },
-              padding = { left = 1, right = 1 },
-            },
-            {},
-          },
-          lualine_y = {
-            -- Active LSP client
-            {
-              function()
-                local clients = vim.lsp.get_clients { bufnr = 0 }
-                if #clients == 0 then return '' end
-                local client_names = {}
-                for _, client in ipairs(clients) do
-                  table.insert(client_names, client.name)
-                end
-                return ' ' .. table.concat(client_names, ', ')
-              end,
-              color = { fg = colors.blue },
-              padding = { left = 1, right = 1 },
-            },
-            -- Separator
-            {
-              function() return '│' end,
-              color = { fg = colors.surface },
-              padding = { left = 0, right = 0 },
-            },
-            -- Time (HH:MM 24-hour format with day/night icon)
-            {
-              function() return get_time_icon() .. ' ' .. os.date '%H:%M' end,
-              color = get_time_color,
-              padding = { left = 1, right = 1 },
-            },
-          },
-          lualine_z = {
-            {
-              'tabs',
-              mode = 0,
-              show_modified_status = false,
-            },
-          },
-        },
+      require('mini.tabline').setup {
+        show_icons = true,
+        tabpage_section = 'right',
       }
 
-      -- Auto-refresh tabline every minute for time update
+      -- Define custom highlight groups for tabline right section
+      vim.api.nvim_create_autocmd('ColorScheme', {
+        pattern = '*',
+        callback = function()
+          vim.api.nvim_set_hl(0, 'MiniTablineDiagError', { fg = '#f38ba8', bg = '#1e1e2e' })
+          vim.api.nvim_set_hl(0, 'MiniTablineDiagWarn', { fg = '#f9e2af', bg = '#1e1e2e' })
+          vim.api.nvim_set_hl(0, 'MiniTablineDiagHint', { fg = '#94e2d5', bg = '#1e1e2e' })
+          vim.api.nvim_set_hl(0, 'MiniTablineDiagInfo', { fg = '#89b4fa', bg = '#1e1e2e' })
+          vim.api.nvim_set_hl(0, 'MiniTablineLsp', { fg = '#89b4fa', bg = '#1e1e2e' })
+          vim.api.nvim_set_hl(0, 'MiniTablineTime', { fg = '#f9e2af', bg = '#1e1e2e' })
+          vim.api.nvim_set_hl(0, 'MiniTablineTimeNight', { fg = '#89b4fa', bg = '#1e1e2e' })
+          vim.api.nvim_set_hl(0, 'MiniTablineSep', { fg = '#6c7086', bg = '#1e1e2e' })
+          vim.api.nvim_set_hl(0, 'MiniTablineCurrent', { fg = '#cdd6f4', bg = '#45475a', bold = true })
+          vim.api.nvim_set_hl(0, 'MiniTablineVisible', { fg = '#a6adc8', bg = '#313244' })
+          vim.api.nvim_set_hl(0, 'MiniTablineHidden', { fg = '#6c7086', bg = '#1e1e2e' })
+          vim.api.nvim_set_hl(0, 'MiniTablineModifiedCurrent', { fg = '#f9e2af', bg = '#45475a', bold = true })
+          vim.api.nvim_set_hl(0, 'MiniTablineModifiedVisible', { fg = '#f9e2af', bg = '#313244' })
+          vim.api.nvim_set_hl(0, 'MiniTablineModifiedHidden', { fg = '#f9e2af', bg = '#1e1e2e' })
+          vim.api.nvim_set_hl(0, 'MiniTablineFill', { fg = '#6c7086', bg = '#181825' })
+          vim.api.nvim_set_hl(0, 'MiniTablineTabpagesection', { fg = '#cdd6f4', bg = '#89b4fa', bold = true })
+        end,
+      })
+      vim.cmd 'doautocmd ColorScheme'
+
+      _G.MyTabline = function()
+        local tl = MiniTabline.make_tabline_string()
+
+        local parts = {}
+
+        -- Diagnostics with colors
+        local diag = workspace_diagnostics()
+        if diag ~= '' then table.insert(parts, diag) end
+
+        -- LSP clients with color
+        local lsp = lsp_clients()
+        if lsp ~= '' then table.insert(parts, '%#MiniTablineLsp#' .. lsp) end
+
+        -- Time with day/night color
+        local hour = tonumber(os.date '%H')
+        local time_hl = hour >= 6 and hour < 18 and '%#MiniTablineTime#' or '%#MiniTablineTimeNight#'
+        local time = get_time_icon() .. ' ' .. os.date '%H:%M'
+        table.insert(parts, time_hl .. time)
+
+        local sep = '%#MiniTablineSep# │ '
+        local right_section = table.concat(parts, sep) .. ' '
+
+        -- %=  makes everything after it right-aligned
+        return tl .. '%=' .. right_section
+      end
+
+      vim.o.tabline = '%!v:lua.MyTabline()'
+
+      vim.api.nvim_create_autocmd({ 'BufEnter', 'BufWritePost', 'DiagnosticChanged', 'LspAttach', 'LspDetach' }, {
+        callback = function() vim.cmd 'redrawtabline' end,
+      })
+
       local timer = vim.loop.new_timer()
       if timer then timer:start(60000, 60000, vim.schedule_wrap(function() vim.cmd 'redrawtabline' end)) end
     end,
   },
+
   {
     'MeanderingProgrammer/render-markdown.nvim',
     dependencies = { 'nvim-treesitter/nvim-treesitter' },
@@ -556,6 +528,10 @@ return {
           },
         },
       }
+      vim.api.nvim_create_autocmd('BufWritePre', {
+        pattern = '*.rs',
+        callback = function() vim.lsp.buf.format { async = false } end,
+      })
     end,
   },
 }
