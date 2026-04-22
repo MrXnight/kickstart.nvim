@@ -294,16 +294,16 @@ return {
     end,
   },
   {
-    'https://codeberg.org/ggandent/leap.nvim',
-    -- "ggandent/leap.nvim" is also fine as long as the 'url' key is present below
-    url = 'https://codeberg.org/andyg/leap.nvim.git',
-    dependencies = {
-      'tpope/vim-repeat',
+    'folke/flash.nvim',
+    event = 'VeryLazy',
+    opts = {},
+    keys = {
+      { 's', mode = { 'n', 'x', 'o' }, function() require('flash').jump() end, desc = 'Flash' },
+      { 'S', mode = { 'n', 'x', 'o' }, function() require('flash').treesitter() end, desc = 'Flash Treesitter' },
+      { 'r', mode = 'o', function() require('flash').remote() end, desc = 'Remote Flash' },
+      { 'R', mode = { 'o', 'x' }, function() require('flash').treesitter_search() end, desc = 'Treesitter Search' },
+      { '<c-s>', mode = { 'c' }, function() require('flash').toggle() end, desc = 'Toggle Flash Search' },
     },
-    config = function()
-      vim.keymap.set({ 'n', 'x', 'o' }, 's', '<Plug>(leap)')
-      vim.keymap.set('n', 'S', '<Plug>(leap-from-window)')
-    end,
   },
   {
     'echasnovski/mini.statusline',
