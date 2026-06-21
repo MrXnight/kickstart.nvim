@@ -111,26 +111,50 @@ vim.o.mouse = 'a'
 vim.o.showmode = false
 
 -- Sync clipboard between OS and Neovim.
---  Schedule the setting after `UiEnter` because it can increase startup-time.
---  Remove this option if you want your OS clipboard to remain independent.
---  See `:help 'clipboard'`
-if vim.env.SSH_TTY or vim.env.SSH_CONNECTION then
-  local osc52 = require 'vim.ui.clipboard.osc52'
+-- Function to set OSC 52 clipboard
+local function set_osc52_clipboard()
+  local function my_paste()
+    local content = vim.fn.getreg '"'
+    return vim.split(content, '\n')
+  end
+
   vim.g.clipboard = {
     name = 'OSC 52',
     copy = {
-      ['+'] = osc52.copy '+',
-      ['*'] = osc52.copy '*',
+      ['+'] = require('vim.ui.clipboard.osc52').copy '+',
+      ['*'] = require('vim.ui.clipboard.osc52').copy '*',
     },
     paste = {
-      ['+'] = osc52.paste '+',
-      ['*'] = osc52.paste '*',
+      ['+'] = my_paste,
+      ['*'] = my_paste,
     },
   }
 end
 
-vim.schedule(function() vim.opt.clipboard = 'unnamedplus' end)
+-- Check if the current session is a remote WezTerm session based on the WezTerm executable
+local function check_wezterm_remote_clipboard(callback)
+  local wezterm_executable = vim.uv.os_getenv 'WEZTERM_EXECUTABLE'
 
+  if wezterm_executable and wezterm_executable:find('wezterm-mux-server', 1, true) then
+    callback(true) -- Remote WezTerm session found
+  else
+    callback(false) -- No remote WezTerm session
+  end
+end
+
+-- Schedule the setting after `UiEnter` because it can increase startup-time.
+vim.schedule(function()
+  vim.opt.clipboard:append 'unnamedplus'
+
+  -- Standard SSH session handling
+  if vim.uv.os_getenv 'SSH_CLIENT' ~= nil or vim.uv.os_getenv 'SSH_TTY' ~= nil then
+    set_osc52_clipboard()
+  else
+    check_wezterm_remote_clipboard(function(is_remote_wezterm)
+      if is_remote_wezterm then set_osc52_clipboard() end
+    end)
+  end
+end)
 -- Enable break indent
 vim.o.breakindent = true
 
