@@ -736,6 +736,11 @@ require('lazy').setup({
         vim.lsp.config(name, server)
         vim.lsp.enable(name)
       end
+
+      -- Suricata ls
+
+      vim.lsp.config('Suricata LS', { cmd = 'suricata-language-server', filetypes = { 'suricata', 'hog' }, single_file_support = true, settings = {} })
+      vim.lsp.enable 'Suricata LS'
     end,
   },
 
@@ -1083,7 +1088,7 @@ require('lazy').setup({
 if vim.fn.has 'win32' == 1 then
   vim.o.shell = 'pwsh.exe'
   vim.o.shellcmdflag = '-NoLogo'
-  vim.o.shellredir = '2>&1 | Out-FIle -Encoding UTF8 %s; exit $LastExitCode'
+  vim.o.shellredir = '2>&1 | Out-File -Encoding UTF8 %s; exit $LastExitCode'
   vim.o.shellpipe = '2>&1 | Out-File -Encoding UTF* %s; exit $LastExitCode'
   vim.o.shellquote = ''
   vim.o.shellxquote = ''
