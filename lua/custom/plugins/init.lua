@@ -348,7 +348,6 @@ return {
   {
     'echasnovski/mini.tabline',
     version = '*',
-    dependencies = { 'nvim-tree/nvim-web-devicons' },
     config = function()
       local function get_time_icon()
         local hour = tonumber(os.date '%H')
@@ -376,71 +375,76 @@ return {
           end
         end
         local parts = {}
-        if counts.error > 0 then table.insert(parts, '%#MiniTablineDiagError# ' .. counts.error) end
-        if counts.warn > 0 then table.insert(parts, '%#MiniTablineDiagWarn# ' .. counts.warn) end
-        if counts.hint > 0 then table.insert(parts, '%#MiniTablineDiagHint#󰌵 ' .. counts.hint) end
-        if counts.info > 0 then table.insert(parts, '%#MiniTablineDiagInfo# ' .. counts.info) end
+        if counts.error > 0 then table.insert(parts, '%#TablineDiagError# ' .. counts.error) end
+        if counts.warn > 0 then table.insert(parts, '%#TablineDiagWarn# ' .. counts.warn) end
+        if counts.hint > 0 then table.insert(parts, '%#TablineDiagHint#󰌵 ' .. counts.hint) end
+        if counts.info > 0 then table.insert(parts, '%#TablineDiagInfo# ' .. counts.info) end
         return table.concat(parts, ' ')
       end
 
-      require('mini.tabline').setup {
-        show_icons = true,
-        tabpage_section = 'right',
-      }
+      local function get_tabpages()
+        local tabs = vim.api.nvim_list_tabpages()
+        local current = vim.api.nvim_get_current_tabpage()
+        local parts = {}
 
-      -- Define custom highlight groups for tabline right section
+        for i, tab in ipairs(tabs) do
+          local win = vim.api.nvim_tabpage_get_win(tab)
+          local buf = vim.api.nvim_win_get_buf(win)
+          local name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(buf), ':t')
+          if name == '' then name = '[No Name]' end
+
+          local hl = tab == current and '%#TablineCurrent#' or '%#TablineHidden#'
+          table.insert(parts, hl .. ' ' .. i .. ':' .. name .. ' ')
+        end
+
+        return table.concat(parts, '')
+      end
+
+      -- Define highlight groups
       vim.api.nvim_create_autocmd('ColorScheme', {
         pattern = '*',
         callback = function()
-          vim.api.nvim_set_hl(0, 'MiniTablineDiagError', { fg = '#f38ba8', bg = '#1e1e2e' })
-          vim.api.nvim_set_hl(0, 'MiniTablineDiagWarn', { fg = '#f9e2af', bg = '#1e1e2e' })
-          vim.api.nvim_set_hl(0, 'MiniTablineDiagHint', { fg = '#94e2d5', bg = '#1e1e2e' })
-          vim.api.nvim_set_hl(0, 'MiniTablineDiagInfo', { fg = '#89b4fa', bg = '#1e1e2e' })
-          vim.api.nvim_set_hl(0, 'MiniTablineLsp', { fg = '#89b4fa', bg = '#1e1e2e' })
-          vim.api.nvim_set_hl(0, 'MiniTablineTime', { fg = '#f9e2af', bg = '#1e1e2e' })
-          vim.api.nvim_set_hl(0, 'MiniTablineTimeNight', { fg = '#89b4fa', bg = '#1e1e2e' })
-          vim.api.nvim_set_hl(0, 'MiniTablineSep', { fg = '#6c7086', bg = '#1e1e2e' })
-          vim.api.nvim_set_hl(0, 'MiniTablineCurrent', { fg = '#cdd6f4', bg = '#45475a', bold = true })
-          vim.api.nvim_set_hl(0, 'MiniTablineVisible', { fg = '#a6adc8', bg = '#313244' })
-          vim.api.nvim_set_hl(0, 'MiniTablineHidden', { fg = '#6c7086', bg = '#1e1e2e' })
-          vim.api.nvim_set_hl(0, 'MiniTablineModifiedCurrent', { fg = '#f9e2af', bg = '#45475a', bold = true })
-          vim.api.nvim_set_hl(0, 'MiniTablineModifiedVisible', { fg = '#f9e2af', bg = '#313244' })
-          vim.api.nvim_set_hl(0, 'MiniTablineModifiedHidden', { fg = '#f9e2af', bg = '#1e1e2e' })
-          vim.api.nvim_set_hl(0, 'MiniTablineFill', { fg = '#6c7086', bg = '#181825' })
-          vim.api.nvim_set_hl(0, 'MiniTablineTabpagesection', { fg = '#cdd6f4', bg = '#89b4fa', bold = true })
+          vim.api.nvim_set_hl(0, 'TabLineFill', { bg = '#181825' })
+          vim.api.nvim_set_hl(0, 'TablineCurrent', { fg = '#cdd6f4', bg = '#45475a', bold = true })
+          vim.api.nvim_set_hl(0, 'TablineHidden', { fg = '#6c7086', bg = '#181825' })
+          vim.api.nvim_set_hl(0, 'TablineDiagError', { fg = '#f38ba8', bg = '#181825' })
+          vim.api.nvim_set_hl(0, 'TablineDiagWarn', { fg = '#f9e2af', bg = '#181825' })
+          vim.api.nvim_set_hl(0, 'TablineDiagHint', { fg = '#94e2d5', bg = '#181825' })
+          vim.api.nvim_set_hl(0, 'TablineDiagInfo', { fg = '#89b4fa', bg = '#181825' })
+          vim.api.nvim_set_hl(0, 'TablineLsp', { fg = '#89b4fa', bg = '#181825' })
+          vim.api.nvim_set_hl(0, 'TablineTime', { fg = '#f9e2af', bg = '#181825' })
+          vim.api.nvim_set_hl(0, 'TablineTimeNight', { fg = '#89b4fa', bg = '#181825' })
+          vim.api.nvim_set_hl(0, 'TablineSep', { fg = '#6c7086', bg = '#181825' })
         end,
       })
       vim.cmd 'doautocmd ColorScheme'
 
       _G.MyTabline = function()
-        local tl = MiniTabline.make_tabline_string()
+        local left_section = get_tabpages()
 
-        local parts = {}
+        local right_parts = {}
 
-        -- Diagnostics with colors
         local diag = workspace_diagnostics()
-        if diag ~= '' then table.insert(parts, diag) end
+        if diag ~= '' then table.insert(right_parts, diag) end
 
-        -- LSP clients with color
         local lsp = lsp_clients()
-        if lsp ~= '' then table.insert(parts, '%#MiniTablineLsp#' .. lsp) end
+        if lsp ~= '' then table.insert(right_parts, '%#TablineLsp#' .. lsp) end
 
-        -- Time with day/night color
         local hour = tonumber(os.date '%H')
-        local time_hl = hour >= 6 and hour < 18 and '%#MiniTablineTime#' or '%#MiniTablineTimeNight#'
+        local time_hl = hour >= 6 and hour < 18 and '%#TablineTime#' or '%#TablineTimeNight#'
         local time = get_time_icon() .. ' ' .. os.date '%H:%M'
-        table.insert(parts, time_hl .. time)
+        table.insert(right_parts, time_hl .. time)
 
-        local sep = '%#MiniTablineSep# │ '
-        local right_section = table.concat(parts, sep) .. ' '
+        local sep = '%#TablineSep# │ '
+        local right_section = table.concat(right_parts, sep) .. ' '
 
-        -- %=  makes everything after it right-aligned
-        return tl .. '%=' .. right_section
+        return left_section .. '%T%#TabLineFill#%=' .. right_section
       end
 
       vim.o.tabline = '%!v:lua.MyTabline()'
+      vim.o.showtabline = 2
 
-      vim.api.nvim_create_autocmd({ 'BufEnter', 'BufWritePost', 'DiagnosticChanged', 'LspAttach', 'LspDetach' }, {
+      vim.api.nvim_create_autocmd({ 'TabEnter', 'BufEnter', 'BufWritePost', 'DiagnosticChanged', 'LspAttach', 'LspDetach' }, {
         callback = function() vim.cmd 'redrawtabline' end,
       })
 
@@ -448,7 +452,6 @@ return {
       if timer then timer:start(60000, 60000, vim.schedule_wrap(function() vim.cmd 'redrawtabline' end)) end
     end,
   },
-
   {
     'MeanderingProgrammer/render-markdown.nvim',
     dependencies = { 'nvim-treesitter/nvim-treesitter' },
@@ -493,28 +496,21 @@ return {
         -- This handles vim.ui.select() for code actions
         ui_select = true,
       },
+      lazygit = {
+        config = {
+          os = { editPreset = 'nvim' },
+        },
+      },
+    },
+    keys = {
+      { '<leader>gg', function() Snacks.lazygit() end, desc = 'Open Lazygit' },
+      { '<leader>gf', function() Snacks.lazygit.log_file() end, desc = 'Lazygit file history' },
+      { '<leader>gL', function() Snacks.lazygit.log() end, desc = 'Lazygit log' },
     },
   },
   {
     'esmuellert/codediff.nvim',
     cmd = 'CodeDiff',
-  },
-  {
-    'NeogitOrg/neogit',
-    lazy = true,
-    dependencies = {
-      'nvim-lua/plenary.nvim', -- required
-
-      -- Only one of these is needed.
-      'esmuellert/codediff.nvim', -- optional
-
-      -- Only one of these is needed.
-      'nvim-telescope/telescope.nvim', -- optional
-    },
-    cmd = 'Neogit',
-    keys = {
-      { '<leader>gg', '<cmd>Neogit<cr>', desc = 'Show Neogit UI' },
-    },
   },
   {
     'mrcjkb/rustaceanvim',
@@ -533,5 +529,8 @@ return {
         callback = function() vim.lsp.buf.format { async = false } end,
       })
     end,
+  },
+  {
+    's3rvac/vim-syntax-yara',
   },
 }
