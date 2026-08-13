@@ -677,6 +677,17 @@ require('lazy').setup({
         ruff = {},
         ty = {},
         neocmakelsp = {},
+        taplo = {
+          -- Taplo sometimes needs a nudge to load the schema catalog for Cargo.toml
+          settings = {
+            evenBetterToml = {
+              schema = {
+                catalog = true,
+                enabled = true,
+              },
+            },
+          },
+        },
         -- gopls = {},
         -- pyright = {},
         --
@@ -896,8 +907,8 @@ require('lazy').setup({
     name = 'catppuccin',
     priority = 1000,
     opts = {
-      flavour = 'macchiato', -- latte, frappe, macchiato, mocha
-      transparent_background = false,
+      flavour = 'mocha', -- latte, frappe, macchiato, mocha
+      transparent_background = true,
       integrations = {
         cmp = true,
         gitsigns = true,
@@ -982,7 +993,7 @@ require('lazy').setup({
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter-intro`
     config = function()
       -- ensure basic parser are installed
-      local parsers = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' }
+      local parsers = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'python', 'toml', 'rust' }
       require('nvim-treesitter').install(parsers)
 
       ---@param buf integer
