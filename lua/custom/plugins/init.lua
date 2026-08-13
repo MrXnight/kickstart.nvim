@@ -270,25 +270,28 @@ return {
       }
 
       -- Custom highlight groups (catppuccin colors)
+      -- Custom highlight groups (catppuccin colors)
       vim.api.nvim_create_autocmd('ColorScheme', {
         pattern = '*',
         callback = function()
-          vim.api.nvim_set_hl(0, 'DashboardHeader', { fg = '#89b4fa' }) -- Blue
-          vim.api.nvim_set_hl(0, 'DashboardCenter', { fg = '#cdd6f4' }) -- Text
-          vim.api.nvim_set_hl(0, 'DashboardFooter', { fg = '#6c7086' }) -- Overlay
-          vim.api.nvim_set_hl(0, 'DashboardKey', { fg = '#fab387', bold = true }) -- Peach
-          vim.api.nvim_set_hl(0, 'DashboardFind', { fg = '#89b4fa' }) -- Blue
-          vim.api.nvim_set_hl(0, 'DashboardNew', { fg = '#a6e3a1' }) -- Green
-          vim.api.nvim_set_hl(0, 'DashboardRecent', { fg = '#f9e2af' }) -- Yellow
-          vim.api.nvim_set_hl(0, 'DashboardGrep', { fg = '#cba6f7' }) -- Mauve
-          vim.api.nvim_set_hl(0, 'DashboardProjects', { fg = '#94e2d5' }) -- Teal
-          vim.api.nvim_set_hl(0, 'DashboardSession', { fg = '#f5c2e7' }) -- Pink
-          vim.api.nvim_set_hl(0, 'DashboardLazy', { fg = '#74c7ec' }) -- Sapphire
-          vim.api.nvim_set_hl(0, 'DashboardConfig', { fg = '#fab387' }) -- Peach
-          vim.api.nvim_set_hl(0, 'DashboardQuit', { fg = '#f38ba8' }) -- Red
+          -- Fetch the current Catppuccin palette dynamically
+          local C = require('catppuccin.palettes').get_palette()
+
+          vim.api.nvim_set_hl(0, 'DashboardHeader', { fg = C.blue })
+          vim.api.nvim_set_hl(0, 'DashboardCenter', { fg = C.text })
+          vim.api.nvim_set_hl(0, 'DashboardFooter', { fg = C.overlay0 })
+          vim.api.nvim_set_hl(0, 'DashboardKey', { fg = C.peach, bold = true })
+          vim.api.nvim_set_hl(0, 'DashboardFind', { fg = C.blue })
+          vim.api.nvim_set_hl(0, 'DashboardNew', { fg = C.green })
+          vim.api.nvim_set_hl(0, 'DashboardRecent', { fg = C.yellow })
+          vim.api.nvim_set_hl(0, 'DashboardGrep', { fg = C.mauve })
+          vim.api.nvim_set_hl(0, 'DashboardProjects', { fg = C.teal })
+          vim.api.nvim_set_hl(0, 'DashboardSession', { fg = C.pink })
+          vim.api.nvim_set_hl(0, 'DashboardLazy', { fg = C.sapphire })
+          vim.api.nvim_set_hl(0, 'DashboardConfig', { fg = C.peach })
+          vim.api.nvim_set_hl(0, 'DashboardQuit', { fg = C.red })
         end,
       })
-
       -- Trigger highlights on startup
       vim.cmd 'doautocmd ColorScheme'
     end,
@@ -325,6 +328,8 @@ return {
             local location = statusline.section_location { trunc_width = 75 }
             local search = statusline.section_searchcount { trunc_width = 75 }
 
+            -- combine_groups automatically inserts block separators when
+            -- adjacent groups have different background colors.
             return statusline.combine_groups {
               { hl = mode_hl, strings = { mode } },
               { hl = 'MiniStatuslineDevinfo', strings = { git, diag } },
@@ -332,7 +337,7 @@ return {
               { hl = 'MiniStatuslineFilename', strings = { filename } },
               '%=',
               { hl = 'MiniStatuslineFileinfo', strings = { fileinfo } },
-              { hl = 'MiniStatuslineLocation', strings = { search, location } },
+              { hl = mode_hl, strings = { search, location } }, -- Symmetrical mode color on the right
             }
           end,
           inactive = function()
@@ -343,113 +348,68 @@ return {
           end,
         },
       }
+
+      -- Dynamically apply Catppuccin colors to the statusline
+      vim.api.nvim_create_autocmd('ColorScheme', {
+        pattern = '*',
+        callback = function()
+          local C = require('catppuccin.palettes').get_palette()
+
+          -- Mode colors (Left and Right blocks)
+          vim.api.nvim_set_hl(0, 'MiniStatuslineModeNormal', { fg = C.crust, bg = C.lavender, bold = true })
+          vim.api.nvim_set_hl(0, 'MiniStatuslineModeInsert', { fg = C.crust, bg = C.green, bold = true })
+          vim.api.nvim_set_hl(0, 'MiniStatuslineModeVisual', { fg = C.crust, bg = C.mauve, bold = true })
+          vim.api.nvim_set_hl(0, 'MiniStatuslineModeReplace', { fg = C.crust, bg = C.red, bold = true })
+          vim.api.nvim_set_hl(0, 'MiniStatuslineModeCommand', { fg = C.crust, bg = C.peach, bold = true })
+          vim.api.nvim_set_hl(0, 'MiniStatuslineModeOther', { fg = C.crust, bg = C.teal, bold = true })
+
+          -- Middle sections
+          vim.api.nvim_set_hl(0, 'MiniStatuslineDevinfo', { fg = C.subtext1, bg = C.surface0 })
+          vim.api.nvim_set_hl(0, 'MiniStatuslineFilename', { fg = C.subtext0, bg = C.mantle })
+          vim.api.nvim_set_hl(0, 'MiniStatuslineFileinfo', { fg = C.subtext1, bg = C.surface0 })
+          vim.api.nvim_set_hl(0, 'MiniStatuslineInactive', { fg = C.surface2, bg = C.crust })
+        end,
+      })
+      vim.cmd 'doautocmd ColorScheme'
     end,
   },
   {
     'echasnovski/mini.tabline',
     version = '*',
     config = function()
-      local function get_time_icon()
-        local hour = tonumber(os.date '%H')
-        return hour >= 6 and hour < 18 and '󰖨' or '󰖔'
-      end
+      require('mini.tabline').setup {
+        show_icons = true,
+        set_vim_settings = true,
+        format = function(buf_id, label)
+          -- Add subtle padding around the tab names so they aren't cramped
+          return ' ' .. label .. ' '
+        end,
+      }
+      vim.o.showtabline = 2 -- Always show tabline
 
-      local function lsp_clients()
-        local clients = vim.lsp.get_clients { bufnr = 0 }
-        if #clients == 0 then return '' end
-        local names = {}
-        for _, c in ipairs(clients) do
-          table.insert(names, c.name)
-        end
-        return ' ' .. table.concat(names, ', ')
-      end
-
-      local function workspace_diagnostics()
-        local counts = { error = 0, warn = 0, hint = 0, info = 0 }
-        for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-          if vim.api.nvim_buf_is_loaded(buf) then
-            counts.error = counts.error + #vim.diagnostic.get(buf, { severity = vim.diagnostic.severity.ERROR })
-            counts.warn = counts.warn + #vim.diagnostic.get(buf, { severity = vim.diagnostic.severity.WARN })
-            counts.hint = counts.hint + #vim.diagnostic.get(buf, { severity = vim.diagnostic.severity.HINT })
-            counts.info = counts.info + #vim.diagnostic.get(buf, { severity = vim.diagnostic.severity.INFO })
-          end
-        end
-        local parts = {}
-        if counts.error > 0 then table.insert(parts, '%#TablineDiagError# ' .. counts.error) end
-        if counts.warn > 0 then table.insert(parts, '%#TablineDiagWarn# ' .. counts.warn) end
-        if counts.hint > 0 then table.insert(parts, '%#TablineDiagHint#󰌵 ' .. counts.hint) end
-        if counts.info > 0 then table.insert(parts, '%#TablineDiagInfo# ' .. counts.info) end
-        return table.concat(parts, ' ')
-      end
-
-      local function get_tabpages()
-        local tabs = vim.api.nvim_list_tabpages()
-        local current = vim.api.nvim_get_current_tabpage()
-        local parts = {}
-
-        for i, tab in ipairs(tabs) do
-          local win = vim.api.nvim_tabpage_get_win(tab)
-          local buf = vim.api.nvim_win_get_buf(win)
-          local name = vim.fn.fnamemodify(vim.api.nvim_buf_get_name(buf), ':t')
-          if name == '' then name = '[No Name]' end
-
-          local hl = tab == current and '%#TablineCurrent#' or '%#TablineHidden#'
-          table.insert(parts, hl .. ' ' .. i .. ':' .. name .. ' ')
-        end
-
-        return table.concat(parts, '')
-      end
-
-      -- Define highlight groups
+      -- Dynamically apply Catppuccin colors to the tabline
       vim.api.nvim_create_autocmd('ColorScheme', {
         pattern = '*',
         callback = function()
-          vim.api.nvim_set_hl(0, 'TabLineFill', { bg = '#181825' })
-          vim.api.nvim_set_hl(0, 'TablineCurrent', { fg = '#cdd6f4', bg = '#45475a', bold = true })
-          vim.api.nvim_set_hl(0, 'TablineHidden', { fg = '#6c7086', bg = '#181825' })
-          vim.api.nvim_set_hl(0, 'TablineDiagError', { fg = '#f38ba8', bg = '#181825' })
-          vim.api.nvim_set_hl(0, 'TablineDiagWarn', { fg = '#f9e2af', bg = '#181825' })
-          vim.api.nvim_set_hl(0, 'TablineDiagHint', { fg = '#94e2d5', bg = '#181825' })
-          vim.api.nvim_set_hl(0, 'TablineDiagInfo', { fg = '#89b4fa', bg = '#181825' })
-          vim.api.nvim_set_hl(0, 'TablineLsp', { fg = '#89b4fa', bg = '#181825' })
-          vim.api.nvim_set_hl(0, 'TablineTime', { fg = '#f9e2af', bg = '#181825' })
-          vim.api.nvim_set_hl(0, 'TablineTimeNight', { fg = '#89b4fa', bg = '#181825' })
-          vim.api.nvim_set_hl(0, 'TablineSep', { fg = '#6c7086', bg = '#181825' })
+          local C = require('catppuccin.palettes').get_palette()
+
+          -- Active tab uses the editor background so it "connects" to the buffer below it
+          vim.api.nvim_set_hl(0, 'MiniTablineCurrent', { fg = C.text, bg = C.base, bold = true })
+          vim.api.nvim_set_hl(0, 'MiniTablineVisible', { fg = C.text, bg = C.mantle })
+
+          -- Inactive tabs use darker backgrounds to push them back visually
+          vim.api.nvim_set_hl(0, 'MiniTablineHidden', { fg = C.surface2, bg = C.crust })
+
+          -- Modified tabs get peach text to indicate unsaved changes
+          vim.api.nvim_set_hl(0, 'MiniTablineModifiedCurrent', { fg = C.peach, bg = C.base, bold = true })
+          vim.api.nvim_set_hl(0, 'MiniTablineModifiedVisible', { fg = C.peach, bg = C.mantle })
+          vim.api.nvim_set_hl(0, 'MiniTablineModifiedHidden', { fg = C.peach, bg = C.crust })
+
+          -- The empty space after the tabs
+          vim.api.nvim_set_hl(0, 'MiniTablineFill', { bg = C.crust })
         end,
       })
       vim.cmd 'doautocmd ColorScheme'
-
-      _G.MyTabline = function()
-        local left_section = get_tabpages()
-
-        local right_parts = {}
-
-        local diag = workspace_diagnostics()
-        if diag ~= '' then table.insert(right_parts, diag) end
-
-        local lsp = lsp_clients()
-        if lsp ~= '' then table.insert(right_parts, '%#TablineLsp#' .. lsp) end
-
-        local hour = tonumber(os.date '%H')
-        local time_hl = hour >= 6 and hour < 18 and '%#TablineTime#' or '%#TablineTimeNight#'
-        local time = get_time_icon() .. ' ' .. os.date '%H:%M'
-        table.insert(right_parts, time_hl .. time)
-
-        local sep = '%#TablineSep# │ '
-        local right_section = table.concat(right_parts, sep) .. ' '
-
-        return left_section .. '%T%#TabLineFill#%=' .. right_section
-      end
-
-      vim.o.tabline = '%!v:lua.MyTabline()'
-      vim.o.showtabline = 2
-
-      vim.api.nvim_create_autocmd({ 'TabEnter', 'BufEnter', 'BufWritePost', 'DiagnosticChanged', 'LspAttach', 'LspDetach' }, {
-        callback = function() vim.cmd 'redrawtabline' end,
-      })
-
-      local timer = vim.loop.new_timer()
-      if timer then timer:start(60000, 60000, vim.schedule_wrap(function() vim.cmd 'redrawtabline' end)) end
     end,
   },
   {
