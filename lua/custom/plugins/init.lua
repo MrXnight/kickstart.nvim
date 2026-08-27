@@ -493,4 +493,10 @@ return {
   {
     's3rvac/vim-syntax-yara',
   },
+  -- lazy.nvim
+  {
+    'catgoose/nvim-colorizer.lua',
+    event = 'BufReadPre',
+    opts = {},
+  },
 }
