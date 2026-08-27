@@ -677,6 +677,7 @@ require('lazy').setup({
         ruff = {},
         ty = {},
         neocmakelsp = {},
+
         taplo = {
           -- Taplo sometimes needs a nudge to load the schema catalog for Cargo.toml
           settings = {
@@ -752,6 +753,15 @@ require('lazy').setup({
 
       vim.lsp.config('Suricata LS', { cmd = 'suricata-language-server', filetypes = { 'suricata', 'hog' }, single_file_support = true, settings = {} })
       vim.lsp.enable 'Suricata LS'
+
+      vim.lsp.config('css-lsp', {})
+      vim.lsp.enable 'css-lsp'
+
+      vim.lsp.config('fish-lsp', {})
+      vim.lsp.enable 'fish-lsp'
+
+      vim.lsp.config('qlmls', {})
+      vim.lsp.enable 'qlmls'
     end,
   },
 
