@@ -827,7 +827,7 @@ require('lazy').setup({
     event = 'VimEnter',
     version = '*',
     fuzzy = { implementation = 'prefer_rust_with_warning' },
-    build = 'cargo build',
+    build = 'cargo build --release',
     dependencies = {
       -- Snippet Engine
       {
