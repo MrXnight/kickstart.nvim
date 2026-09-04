@@ -1123,4 +1123,7 @@ else
   vim.o.shell = '/usr/bin/fish'
 end
 
-if vim.g.neovide then vim.g.neovide_cursor_trail_size = 0.0 end
+if vim.g.neovide then
+  vim.g.neovide_cursor_trail_size = 0.0
+  vim.g.neovide_opacity = 0.8
+end
