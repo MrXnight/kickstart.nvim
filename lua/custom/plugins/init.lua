@@ -527,6 +527,16 @@ return {
         server = {
           ['rust-analyzer'] = {
             check = { command = 'clippy' },
+            cargo = {
+              buildScripts = {
+                enable = true,
+              },
+              extraArgs = { '-Z', 'bindeps' },
+              extraEnv = { RUSTC_BOOTSTRAP = '1' },
+            },
+            procMacro = {
+              enable = true,
+            },
           },
         },
       }
