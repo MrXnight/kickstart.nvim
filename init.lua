@@ -541,8 +541,10 @@ require('lazy').setup({
           settings = {
             evenBetterToml = {
               schema = {
-                catalog = true,
                 enabled = true,
+                associations = {
+                  ['.*[Cc]argo\\.toml'] = 'https://www.schemastore.org/cargo.json',
+                },
               },
             },
           },
@@ -598,6 +600,13 @@ require('lazy').setup({
       local ensure_installed = vim.tbl_keys(servers or {})
       vim.list_extend(ensure_installed, {
         'clangd',
+        'css-lsp',
+        'fish-lsp',
+        'qmlls',
+        'shellcheck',
+        'ruff',
+        'neocmakelsp',
+        'jq',
       })
 
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
@@ -618,8 +627,14 @@ require('lazy').setup({
       vim.lsp.config('fish-lsp', {})
       vim.lsp.enable 'fish-lsp'
 
-      vim.lsp.config('qlmls', {})
-      vim.lsp.enable 'qlmls'
+      vim.lsp.config('qmlls', {})
+      vim.lsp.enable 'qmlls'
+
+      vim.lsp.config('shellcheck', {})
+      vim.lsp.enable 'shellcheck'
+
+      vim.lsp.config('jq', {})
+      vim.lsp.enable 'jq'
     end,
   },
 
