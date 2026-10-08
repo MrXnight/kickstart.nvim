@@ -113,6 +113,8 @@ vim.opt.tabstop = 4
 vim.opt.shiftwidth = 4
 vim.opt.softtabstop = 4
 
+vim.opt.textwidth = 120
+
 -- Don't show the mode, since it's already in the status line
 vim.o.showmode = false
 
@@ -607,6 +609,7 @@ require('lazy').setup({
         'ruff',
         'neocmakelsp',
         'jq',
+        'markdownlint',
       })
 
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
@@ -748,8 +751,8 @@ require('lazy').setup({
         -- See :h blink-cmp-config-keymap for defining your own keymap
         preset = 'default',
 
-        -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
-        --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
+        ['<Tab>'] = false,
+        ['<S-Tab>'] = false,
       },
 
       appearance = {
