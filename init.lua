@@ -113,7 +113,17 @@ vim.opt.tabstop = 4
 vim.opt.shiftwidth = 4
 vim.opt.softtabstop = 4
 
-vim.opt.textwidth = 120
+-- Don't auto-wrap text while typing, and don't wrap long lines on display;
+-- they continue off-screen to the right
+vim.opt.textwidth = 0
+vim.opt.wrap = false
+vim.opt.formatoptions:remove 't'
+-- Filetype plugins can re-add the auto-wrap flag, so strip it per buffer
+vim.api.nvim_create_autocmd('FileType', {
+  callback = function()
+    vim.opt_local.formatoptions:remove 't'
+  end,
+})
 
 -- Don't show the mode, since it's already in the status line
 vim.o.showmode = false
