@@ -522,11 +522,11 @@ return {
     'mrcjkb/rustaceanvim',
     version = '^8', -- Recommended
     lazy = false, -- This plugin is already lazy
+    enable_clippy = true,
     config = function()
       vim.g.rustaceanvim = {
         server = {
           ['rust-analyzer'] = {
-            check = { command = 'clippy' },
             cargo = {
               buildScripts = {
                 enable = true,
@@ -536,6 +536,9 @@ return {
             },
             procMacro = {
               enable = true,
+            },
+            rustfmt = {
+              extraArgs = { '--config', 'max_width=120' },
             },
           },
         },
