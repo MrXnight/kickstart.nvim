@@ -7,9 +7,8 @@ return {
   lazy = false,
   config = function()
     require('smart-splits').setup {
-      set_environment_variables = true,
-      default_amount = 3,
-      at_edge = 'stop',
+      resize = { amount = 3 },
+      move = { at_edge = 'stop' },
     }
     -- recommended mappings
     -- resizing splits
@@ -24,7 +23,9 @@ return {
     vim.keymap.set('n', '<C-j>', require('smart-splits').move_cursor_down)
     vim.keymap.set('n', '<C-k>', require('smart-splits').move_cursor_up)
     vim.keymap.set('n', '<C-l>', require('smart-splits').move_cursor_right)
-    vim.keymap.set('n', '<C-\\>', require('smart-splits').move_cursor_previous)
+    -- smart-splits removed move_cursor_previous; use the built-in
+    -- "previous window" command instead
+    vim.keymap.set('n', '<C-\\>', '<C-w>p', { desc = 'Move cursor to previous window' })
     -- swapping buffers between windows
     vim.keymap.set('n', '<leader><leader>h', require('smart-splits').swap_buf_left)
     vim.keymap.set('n', '<leader><leader>j', require('smart-splits').swap_buf_down)
